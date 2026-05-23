@@ -1,0 +1,20 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: churn-api
+    ports:
+      - "8000:8000"
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    container_name: churn-web
+    ports:
+      - "8501:8501"
+    environment:
+      - API_URL=http://api:8000
+    depends_on:
+      - api
