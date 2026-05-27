@@ -34,6 +34,9 @@ jobs:
       - name: Train models
         run: python -m src.train
 
+      - name: Evaluate model
+        run: python -m src.evaluate
+
       - name: Run threshold analysis
         run: python -m src.threshold_analysis
 

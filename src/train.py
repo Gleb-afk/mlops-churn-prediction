@@ -162,6 +162,72 @@ def save_roc_curve(best_pipeline, X_test, y_test) -> None:
     print(f"ROC-кривая сохранена: {output_path}")
 
 
+def translate_feature_name(feature_name: str) -> str:
+    """
+    Переводит технические названия признаков после OneHotEncoder
+    в понятные русские подписи для графика важности признаков.
+    """
+
+    column_translations = {
+        "gender": "Пол",
+        "SeniorCitizen": "Пожилой клиент",
+        "Partner": "Наличие партнёра",
+        "Dependents": "Наличие иждивенцев",
+        "tenure": "Срок обслуживания",
+        "PhoneService": "Телефонная связь",
+        "MultipleLines": "Несколько телефонных линий",
+        "InternetService": "Тип интернета",
+        "OnlineSecurity": "Онлайн-безопасность",
+        "OnlineBackup": "Онлайн-резервное копирование",
+        "DeviceProtection": "Защита устройства",
+        "TechSupport": "Техническая поддержка",
+        "StreamingTV": "Стриминговое ТВ",
+        "StreamingMovies": "Стриминговые фильмы",
+        "Contract": "Тип договора",
+        "PaperlessBilling": "Электронный счёт",
+        "PaymentMethod": "Способ оплаты",
+        "MonthlyCharges": "Ежемесячный платёж",
+        "TotalCharges": "Общая сумма платежей",
+    }
+
+    value_translations = {
+        "Female": "женский",
+        "Male": "мужской",
+        "Yes": "да",
+        "No": "нет",
+        "No internet service": "нет интернет-услуг",
+        "No phone service": "нет телефонной связи",
+        "DSL": "DSL",
+        "Fiber optic": "оптоволокно",
+        "Month-to-month": "ежемесячный",
+        "One year": "один год",
+        "Two year": "два года",
+        "Electronic check": "электронный чек",
+        "Mailed check": "чек по почте",
+        "Bank transfer (automatic)": "банковский перевод",
+        "Credit card (automatic)": "кредитная карта",
+    }
+
+    clean_name = feature_name
+
+    if clean_name.startswith("numeric__"):
+        clean_name = clean_name.replace("numeric__", "", 1)
+        return column_translations.get(clean_name, clean_name)
+
+    if clean_name.startswith("categorical__"):
+        clean_name = clean_name.replace("categorical__", "", 1)
+
+        if "_" in clean_name:
+            column_name, value_name = clean_name.split("_", 1)
+            column_ru = column_translations.get(column_name, column_name)
+            value_ru = value_translations.get(value_name, value_name)
+            return f"{column_ru}: {value_ru}"
+
+        return column_translations.get(clean_name, clean_name)
+
+    return column_translations.get(clean_name, clean_name)
+
+
 def save_feature_importance(best_pipeline) -> None:
     """
     Сохраняет важность признаков для лучшей модели.
@@ -184,6 +250,7 @@ def save_feature_importance(best_pipeline) -> None:
     importance_df = pd.DataFrame(
         {
             "feature": feature_names,
+            "feature_ru": [translate_feature_name(name) for name in feature_names],
             "importance": importances,
         }
     ).sort_values(by="importance", ascending=False)
@@ -193,14 +260,17 @@ def save_feature_importance(best_pipeline) -> None:
 
     top_features = importance_df.head(15).sort_values(by="importance")
 
-    plt.figure(figsize=(10, 7))
-    plt.barh(top_features["feature"], top_features["importance"])
-    plt.title("Top 15 Feature Importances")
-    plt.xlabel("Importance")
+    plt.rcParams["font.family"] = "DejaVu Sans"
+
+    plt.figure(figsize=(12, 8))
+    plt.barh(top_features["feature_ru"], top_features["importance"])
+    plt.title("Топ-15 наиболее важных признаков")
+    plt.xlabel("Важность признака")
+    plt.ylabel("Признак")
     plt.tight_layout()
 
     png_path = REPORTS_DIR / "feature_importance.png"
-    plt.savefig(png_path)
+    plt.savefig(png_path, dpi=300, bbox_inches="tight")
     plt.close()
 
     print(f"Важность признаков сохранена: {csv_path}")
